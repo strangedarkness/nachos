@@ -162,6 +162,7 @@ public final class TCB {
 
 	this.interrupt();
 	previous.yield();
+	
     }
 
     /**

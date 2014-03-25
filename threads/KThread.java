@@ -2,8 +2,9 @@
 //PART OF THE NACHOS. DON'T CHANGE CODE OF THIS LINE
 package nachos.threads;
 
+import nachos.ag.BoatGrader;
 import nachos.machine.*;
-
+import nachos.threads.Semaphore;
 /**
  * A KThread is a thread that can be used to execute Nachos kernel code. Nachos
  * allows multiple threads to run concurrently.
@@ -59,6 +60,7 @@ public class KThread {
 
 	    createIdleThread();
 	}
+	joinSemaphore = new Semaphore(0);
     }
 
     /**
@@ -160,7 +162,8 @@ public class KThread {
     private void runThread() {
 	begin();
 	target.run();
-	finish();
+	joinSemaphore.V();
+	finish();	
     }
 
     private void begin() {
@@ -195,7 +198,7 @@ public class KThread {
 
 
 	currentThread.status = statusFinished;
-
+	
 	sleep();
     }
 
@@ -278,7 +281,8 @@ public class KThread {
 	Lib.debug(dbgThread, "Joining to thread: " + toString());
 
 	Lib.assertTrue(this != currentThread);
-
+	
+	joinSemaphore.P();
     }
 
     /**
@@ -407,8 +411,69 @@ public class KThread {
 
 	new KThread(new PingTest(1)).setName("forked thread").fork();
 	new PingTest(0).run();
+	
+	testJoin();
+	testCondition();
+	testBoat();
     }
 
+    public static void testJoin()
+    {
+    	//test join function
+    	System.out.println("-------Testing join function------");
+    	KThread forkThread=new KThread(new PingTest(1));
+    	forkThread.setName("forked thread").fork();
+    	forkThread.join();
+    	new PingTest(0).run();
+    }
+    
+    private static class ConTest implements Runnable {
+    	ConTest(Lock lock, Condition2 con) {
+    	    this.lock=lock;
+    	    this.con=con;
+    	}
+
+    	public void run() {
+    		lock.acquire();
+    		System.out.println("Thread1 is running.");
+    		System.out.println("Thread1 is going to sleep.");
+    		con.sleep();
+    		System.out.println("Thread2 is awake!");
+    		lock.release();
+    	}
+    	private Lock lock;
+    	private Condition2 con;
+    }
+    
+    public static void testCondition(){
+    	System.out.println("------Testing condition variable------");
+    	Lock testLock=new Lock();
+    	Condition2 testCon = new Condition2(testLock);
+    	    	
+    	KThread Thread1=new KThread(new ConTest(testLock,testCon));
+    	Thread1.setName("fork thread").fork();
+    	KThread.yield();
+    	System.out.println("Thread2 is running.");
+    	testLock.acquire();
+    	System.out.println("Thread2 acquires the lock.");
+    	System.out.println("Thread2 try to wake up thread1.");
+    	testCon.wake();
+    	testLock.release();
+    	Thread1.join();
+    } 
+    public static void testBoat(){
+    	System.out.println("------Test boat------");
+    	int adults,children;
+    	adults=0;children=2;
+    	System.out.println(adults+" adults and "+children+" children:");
+    	Boat.begin(adults, children, new BoatGrader());
+    	adults=1;children=2;
+    	System.out.println(adults+" adults and "+children+" children:");
+    	Boat.begin(adults, children, new BoatGrader());
+    	adults=20;children=2;
+    	System.out.println(adults+" adults and "+children+" children:");
+    	Boat.begin(adults, children, new BoatGrader());
+    }
     private static final char dbgThread = 't';
 
     /**
@@ -439,6 +504,9 @@ public class KThread {
      * threads.
      */
     private int id = numCreated++;
+    
+    //We use this Semaphore to implement join function.
+    private Semaphore joinSemaphore = null;
     /** Number of times the KThread constructor was called. */
     private static int numCreated = 0;
 
@@ -446,4 +514,5 @@ public class KThread {
     private static KThread currentThread = null;
     private static KThread toBeDestroyed = null;
     private static KThread idleThread = null;
+    
 }
