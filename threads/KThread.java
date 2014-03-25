@@ -434,11 +434,12 @@ public class KThread {
     	}
 
     	public void run() {
-    		lock.acquire();
     		System.out.println("Thread1 is running.");
+    		lock.acquire();
+    		System.out.println("Thread1 acquires the lock.");
     		System.out.println("Thread1 is going to sleep.");
     		con.sleep();
-    		System.out.println("Thread2 is awake!");
+    		System.out.println("Thread1 wakes up!");
     		lock.release();
     	}
     	private Lock lock;
@@ -467,10 +468,10 @@ public class KThread {
     	adults=0;children=2;
     	System.out.println(adults+" adults and "+children+" children:");
     	Boat.begin(adults, children, new BoatGrader());
-    	adults=1;children=2;
+    	adults=2;children=2;
     	System.out.println(adults+" adults and "+children+" children:");
     	Boat.begin(adults, children, new BoatGrader());
-    	adults=20;children=2;
+    	adults=2;children=5;
     	System.out.println(adults+" adults and "+children+" children:");
     	Boat.begin(adults, children, new BoatGrader());
     }

@@ -272,16 +272,8 @@ public class Boat
     				}else if(OahuChildNum>=2)
     				{
     					//If more than two children at Oahu, 2 children go to Oahu
-    					if(isBoatEmpty)
-    					{
-    						isBoatEmpty=false;    						
-    						rowToMolokai();
-    					}else {
-							rideToMolokai();							
-    						isBoatEmpty=true;
-							boatPos=1;
-							BoatConAtMolokai.wakeAll();
-						}
+    					isBoatEmpty=false;    						
+						rowToMolokai();
     				}else if(OahuAdultNum==0)
     				{
     					//If only one children and no adult at Oahu, just go to Oahu by himeself
