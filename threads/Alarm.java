@@ -4,6 +4,10 @@ package nachos.threads;
 
 import nachos.machine.*;
 
+import java.util.Iterator;
+import java.util.SortedSet;
+import java.util.TreeSet;
+
 /**
  * Uses the hardware timer to provide preemption, and to allow threads to sleep
  * until a certain time.
@@ -17,6 +21,7 @@ public class Alarm {
      * alarm.
      */
     public Alarm() {
+        waiting = new TreeSet<WaitingThread>();
 	Machine.timer().setInterruptHandler(new Runnable() {
 		public void run() { timerInterrupt(); }
 	    });
@@ -29,7 +34,15 @@ public class Alarm {
      * that should be run.
      */
     public void timerInterrupt() {
-	KThread.currentThread().yield();
+	//KThread.currentThread().yield();
+        long time = Machine.timer().getTime();
+	while(!waiting.isEmpty() && ((WaitingThread) waiting.first()).time <= time) {
+	    WaitingThread next = (WaitingThread) waiting.first();
+            next.thread.ready();
+	    waiting.remove(next);
+	    Lib.assertTrue(next.time <= time);
+	}
+        return;
     }
 
     /**
@@ -49,7 +62,34 @@ public class Alarm {
     public void waitUntil(long x) {
 	// for now, cheat just to get something working (busy waiting is bad)
 	long wakeTime = Machine.timer().getTime() + x;
-	while (wakeTime > Machine.timer().getTime())
-	    KThread.yield();
+        boolean intStatus = Machine.interrupt().disable();
+        WaitingThread waitingThread = new WaitingThread(wakeTime, KThread.currentThread());
+        waiting.add(waitingThread);
+        KThread.sleep();
+        Machine.interrupt().restore(intStatus);
+    }
+
+    private TreeSet<WaitingThread> waiting;
+    private class WaitingThread implements Comparable {
+        WaitingThread(long time, KThread thread) {  
+            this.time = time;
+            this.thread = thread;
+        }
+
+	public int compareTo(Object o) {
+	    WaitingThread wt = (WaitingThread) o;
+	    if(time < wt.time) {
+                return -1;
+            }
+	    else if(time > wt.time) {
+                return 1;
+            }
+	    else {
+	        return thread.compareTo(wt.thread);   
+            }     
+	}
+
+        long time;
+        KThread thread;
     }
 }

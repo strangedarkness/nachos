@@ -1,5 +1,3 @@
-//idcnritnmhkh`ovdhytrihbi`ofmhkh`bido{itcnvdo
-//PART OF THE NACHOS. DON'T CHANGE CODE OF THIS LINE
 package nachos.threads;
 
 import nachos.machine.*;
@@ -16,6 +14,10 @@ public class Communicator {
      * Allocate a new communicator.
      */
     public Communicator() {
+	   this.isWordReady = false;
+           this.lock = new Lock();       
+           this.speakerCond  = new Condition2(lock);  
+           this.listenerCond = new Condition2(lock);  
     }
 
     /**
@@ -29,6 +31,16 @@ public class Communicator {
      * @param	word	the integer to transfer.
      */
     public void speak(int word) {
+        lock.acquire();           
+        speaker++;                  
+        while (isWordReady || listener == 0) {   
+            speakerCond.sleep();  
+        }                         
+        this.word = word;         
+        isWordReady = true;      
+        listenerCond.wakeAll();      
+        speaker--;                
+        lock.release();           
     }
 
     /**
@@ -38,6 +50,23 @@ public class Communicator {
      * @return	the integer transferred.
      */
     public int listen() {
-	return 0;
+        lock.acquire();           
+        listener++;               
+        while(isWordReady == false) {   
+            speakerCond.wakeAll();       
+            listenerCond.sleep();      
+        }                        
+        int word = this.word;     
+        isWordReady = false;      
+        listener--;               
+        lock.release();           
+        return word;
     }
+    private int listener = 0;
+    private int speaker  = 0;
+    private int word = 0;
+    private boolean isWordReady;
+    private Lock lock;
+    private Condition2 speakerCond;
+    private Condition2 listenerCond;
 }
